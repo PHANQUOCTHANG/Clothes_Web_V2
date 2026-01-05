@@ -1,19 +1,21 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const FreeShippingBar = ({ isFreeShipping, remaining, progress }: any) => (
-  <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-    <div className="text-sm font-semibold mb-2">
+  <div className="mt-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+    <div className="text-sm font-medium mb-3 text-gray-900">
       {isFreeShipping ? (
-        <span className="text-green-600">🎉 MIỄN PHÍ VẬN CHUYỂN!</span>
+        <span className="text-gray-900">✓ Bạn được miễn phí vận chuyển</span>
       ) : (
-        <span className="text-blue-600">
-          Mua thêm ${remaining.toFixed(2)} để được MIỄN PHÍ VẬN CHUYỂN!
+        <span className="text-gray-700">
+          Mua thêm{" "}
+          <span className="font-semibold">${remaining.toFixed(2)}</span> để được
+          miễn phí vận chuyển
         </span>
       )}
     </div>
-    <div className="w-full bg-gray-300 rounded-full h-2">
+    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
       <div
         className={`h-2 rounded-full transition-all duration-500 ${
-          isFreeShipping ? "bg-green-500" : "bg-blue-500"
+          isFreeShipping ? "bg-gray-900" : "bg-gray-400"
         }`}
         style={{
           width: `${Math.min(100, progress)}%`,

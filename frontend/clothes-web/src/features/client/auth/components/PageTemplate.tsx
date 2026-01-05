@@ -10,7 +10,7 @@ import {
   GoogleIcon,
   FacebookIcon,
   ThemeConstants,
-} from "@/features/auth/constants/constantsAuth";
+} from "@/features/client/auth/constants/constantsAuth";
 
 interface FlowData {
   form: unknown;

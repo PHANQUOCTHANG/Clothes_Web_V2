@@ -3,16 +3,13 @@
 import React from "react";
 
 // Hằng số và các kiểu dữ liệu
-import { CURRENT_THEME } from "@/features/auth/constants/constantsAuth";
-
+import { CURRENT_THEME } from "@/features/client/auth/constants/constantsAuth";
 // Components: Form đăng nhập
-import LoginForm from "@/features/auth/components/LoginForm";
-
+import LoginForm from "@/features/client/auth/components/LoginForm";
 // Components: Layout
-import PageTemplate from "@/features/auth/components/PageTemplate";
-
+import PageTemplate from "@/features/client/auth/components/PageTemplate";
 // Hook: Xử lý logic đăng nhập
-import useLogin from "@/features/auth/hooks/useLogin";
+import useLogin from "@/features/client/auth/hooks/useLogin";
 
 const LoginPage: React.FC = () => {
   // Hook: Lấy dữ liệu và hàm xử lý đăng nhập

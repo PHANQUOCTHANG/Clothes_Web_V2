@@ -1,38 +1,76 @@
 import { Router } from "express";
-import { ReviewController } from "@/controllers/review.controller";
-import { ReviewService } from "@/services/review.service";
-import { ReviewRepository } from "@/repositories/review.repository";
-import { ProductRepository } from "@/repositories/product.repository";
+import * as reviewCtrl from "@/controllers/review.controller";
 import validationMiddleware from "@/middleware/validate.middleware";
 import { CreateReviewRequestDto } from "@/dto/request/review.request";
 
 const router = Router();
 
-// Khởi tạo Dependency Injection thủ công
-const reviewRepo = new ReviewRepository();
-const productRepo = new ProductRepository();
-const reviewService = new ReviewService(reviewRepo, productRepo);
-const reviewController = new ReviewController(reviewService);
-
-// Gửi đánh giá mới - Lưu thông tin và cập nhật điểm Rating sản phẩm
+/**
+ * @swagger
+ * /api/v1/reviews:
+ * post:
+ * summary: Tạo đánh giá sản phẩm
+ * tags:
+ * - Reviews
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * $ref: '#/components/schemas/CreateReviewRequestDto'
+ * responses:
+ * 201:
+ * description: Đánh giá đã được tạo
+ */
+// URL: /api/v1/reviews
 router.post(
   "/",
-  // authMiddleware, // Cần thêm để xác thực người dùng
   validationMiddleware(CreateReviewRequestDto),
-  reviewController.createReview
+  reviewCtrl.createReview
 );
 
-// Lấy danh sách đánh giá của một sản phẩm - Hỗ trợ phân trang và tìm kiếm bình luận
-router.get(
-  "/:productId",
-  reviewController.getProductReviews
-);
+/**
+ * @swagger
+ * /api/v1/reviews/product/{productId}:
+ * get:
+ * summary: Lấy đánh giá của một sản phẩm
+ * tags:
+ * - Reviews
+ * parameters:
+ * - in: path
+ * name: productId
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 200:
+ * description: Thành công
+ */
+// URL: /api/v1/reviews/product/:productId
+router.get("/product/:productId", reviewCtrl.getReviewsByProduct);
 
-// Xóa đánh giá - Tự động tính toán lại điểm Rating sau khi xóa
-router.delete(
-  "/:id",
-  // authMiddleware, // Chỉ cho phép Admin hoặc chủ nhân đánh giá xoá
-  reviewController.deleteReview
-);
+/**
+ * @swagger
+ * /api/v1/reviews/{id}:
+ * delete:
+ * summary: Xóa đánh giá
+ * tags:
+ * - Reviews
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 204:
+ * description: Đã xóa thành công
+ */
+// URL: /api/v1/reviews/:id
+router.delete("/:id", reviewCtrl.deleteReview);
 
 export default router;

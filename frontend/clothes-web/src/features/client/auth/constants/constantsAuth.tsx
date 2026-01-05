@@ -3,7 +3,7 @@ import React from "react";
 import { Variants } from "framer-motion";
 
 // --- TYPES ---
-export type AuthFlow = "login" | "register" | "forgot_email" | "forgot_otp";
+export type AuthFlow = "login" | "register" | "forgot_email" | "forgot_otp" | "forgot_new_password";
 
 export interface LoginFormState {
   email: string;

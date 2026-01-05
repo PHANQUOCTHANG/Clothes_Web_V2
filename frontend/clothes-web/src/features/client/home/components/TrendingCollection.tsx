@@ -1,6 +1,6 @@
 "use client";
 
-import { ProductCard } from "@/features/home/components/ProductCard";
+import { ProductCard } from "@/features/client/home/components/ProductCard";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import React from "react";
 

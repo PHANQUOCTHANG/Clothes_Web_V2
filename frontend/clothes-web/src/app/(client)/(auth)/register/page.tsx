@@ -1,8 +1,8 @@
 "use client";
-import PageTemplate from "@/features/auth/components/PageTemplate";
-import RegisterForm from "@/features/auth/components/RegisterForm";
-import useRegister from "@/features/auth/hooks/useRegister";
-import { CURRENT_THEME } from "@/features/auth/constants/constantsAuth";
+import PageTemplate from "@/features/client/auth/components/PageTemplate";
+import RegisterForm from "@/features/client/auth/components/RegisterForm";
+import useRegister from "@/features/client/auth/hooks/useRegister";
+import { CURRENT_THEME } from "@/features/client/auth/constants/constantsAuth";
 import React from "react";
 
 const RegisterPage: React.FC = () => {

@@ -3,38 +3,39 @@ import { IReview, IReviewDocument } from "@/interface/review.interface";
 import Review from "@/models/review.model";
 import mongoose from "mongoose";
 
-export class ReviewRepository {
+export interface IReviewRepository {
+  create(data: Partial<IReview>): Promise<IReviewDocument>;
+  findAll(
+    query: BaseQuery,
+    filter?: object
+  ): Promise<IPaginatedResult<IReviewDocument>>;
+  findById(id: string): Promise<IReviewDocument | null>;
+  findOne(filter: object): Promise<IReviewDocument | null>;
+  updateById(
+    id: string,
+    data: Partial<IReview>
+  ): Promise<IReviewDocument | null>;
+  deleteById(id: string): Promise<void>;
+  calculateAverageRating(
+    productId: string
+  ): Promise<{ avgRating: number; totalReviews: number }>;
+}
+
+export class ReviewRepository implements IReviewRepository {
   // Tạo đánh giá mới
   async create(data: Partial<IReview>): Promise<IReviewDocument> {
     return Review.create(data);
   }
 
-  // Tìm một đánh giá dựa trên filter (ví dụ: check một user đã đánh giá product này chưa)
-  async findOne(filter: object): Promise<IReviewDocument | null> {
-    return Review.findOne(filter).populate("user", "fullName");
-  }
+  // Lấy danh sách kèm phân trang, tìm kiếm và lọc bản ghi chưa xóa
+  async findAll(
+    query: BaseQuery,
+    filter: object = {}
+  ): Promise<IPaginatedResult<IReviewDocument>> {
+    const { page = 1, limit = 10, sort, search } = query;
 
-  // Tìm đánh giá theo ID
-  async findById(id: string): Promise<IReviewDocument | null> {
-    return Review.findById(id).populate("user", "fullName");
-  }
-
-  // Cập nhật đánh giá
-  async updateById(id: string, data: Partial<IReview>): Promise<IReviewDocument | null> {
-    return Review.findByIdAndUpdate(id, data, { new: true, runValidators: true });
-  }
-
-  // Xóa đánh giá (Review thường xóa cứng hoặc bạn có thể dùng soft delete nếu muốn)
-  async deleteById(id: string): Promise<void> {
-    await Review.findByIdAndDelete(id);
-  }
-
-  // Lấy danh sách review có phân trang + populate thông tin user/product
-  async findAll(query: BaseQuery, filter: object = {}): Promise<IPaginatedResult<IReviewDocument>> {
-    const { page, limit, sort, search } = query;
-
-    // Nếu có search, tìm kiếm trong nội dung comment
-    const finalFilter: any = { ...filter };
+    // Filter mặc định loại bỏ đánh giá đã xóa
+    const finalFilter: any = { ...filter, deleted: { $ne: true } };
     if (search) {
       finalFilter.comment = { $regex: search, $options: "i" };
     }
@@ -45,12 +46,13 @@ export class ReviewRepository {
         .skip((page - 1) * limit)
         .limit(limit)
         .populate("user", "fullName")
-        .populate("product", "name"),
+        .populate("product", "name")
+        .lean(),
       Review.countDocuments(finalFilter),
     ]);
 
     return {
-      data,
+      data: data as IReviewDocument[],
       total,
       page,
       limit,
@@ -58,12 +60,50 @@ export class ReviewRepository {
     };
   }
 
-  // Tính toán lại Rating trung bình bằng MongoDB Aggregation
-  async calculateAverageRating(productId: string): Promise<{ avgRating: number; totalReviews: number }> {
+  // Tìm theo ID (bỏ qua bản ghi đã xóa)
+  async findById(id: string): Promise<IReviewDocument | null> {
+    return Review.findOne({ _id: id, deleted: { $ne: true } }).populate(
+      "user",
+      "fullName"
+    );
+  }
+
+  // Tìm một bản ghi theo điều kiện lọc
+  async findOne(filter: object): Promise<IReviewDocument | null> {
+    return Review.findOne({ ...filter, deleted: { $ne: true } }).populate(
+      "user",
+      "fullName"
+    );
+  }
+
+  // Cập nhật theo ID kèm kiểm tra schema
+  async updateById(
+    id: string,
+    data: Partial<IReview>
+  ): Promise<IReviewDocument | null> {
+    return Review.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    });
+  }
+
+  // Xóa mềm bằng cách cập nhật flag deleted
+  async deleteById(id: string): Promise<void> {
+    await Review.findByIdAndUpdate(id, {
+      deleted: true,
+      deletedAt: new Date(),
+    });
+  }
+
+  // Tính toán rating trung bình cho sản phẩm bằng Aggregate
+  async calculateAverageRating(
+    productId: string
+  ): Promise<{ avgRating: number; totalReviews: number }> {
     const stats = await Review.aggregate([
       {
         $match: {
           product: new mongoose.Types.ObjectId(productId),
+          deleted: { $ne: true }, // Chỉ tính các đánh giá chưa bị xóa
         },
       },
       {
@@ -75,10 +115,9 @@ export class ReviewRepository {
       },
     ]);
 
-    // Trả về kết quả mặc định nếu chưa có review nào
     if (stats.length > 0) {
       return {
-        avgRating: stats[0].avgRating,
+        avgRating: Math.round(stats[0].avgRating * 10) / 10, // Làm tròn 1 chữ số thập phân
         totalReviews: stats[0].totalReviews,
       };
     }

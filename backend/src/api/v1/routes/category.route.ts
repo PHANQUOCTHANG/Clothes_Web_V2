@@ -1,37 +1,102 @@
 import { Router } from "express";
-import { CategoryController } from "@/controllers/category.controller";
-import { CategoryService } from "@/services/category.service";
-import { CategoryRepository } from "@/repositories/category.repository";
+import * as categoryCtrl from "@/controllers/category.controller";
 import validationMiddleware from "@/middleware/validate.middleware";
-import { CreateCategoryRequestDto, UpdateCategoryRequestDto } from "@/dto/request/category.request";
+import {
+  CreateCategoryRequestDto,
+  UpdateCategoryRequestDto,
+} from "@/dto/request/category.request";
 
 const router = Router();
 
-const categoryRepo = new CategoryRepository();
-const categoryService = new CategoryService(categoryRepo);
-const categoryController = new CategoryController(categoryService);
+/**
+ * @swagger
+ * /api/v1/categories:
+ * get:
+ * summary: Lấy danh sách danh mục
+ * tags: [Categories]
+ * responses:
+ * 200:
+ * description: Thành công
+ * post:
+ * summary: Tạo danh mục mới
+ * tags: [Categories]
+ * security:
+ * - bearerAuth: []
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * $ref: '#/components/schemas/CreateCategoryRequestDto'
+ * responses:
+ * 201:
+ * description: Đã tạo thành công
+ */
+router
+  .route("/")
+  .get(categoryCtrl.getCategories)
+  .post(
+    validationMiddleware(CreateCategoryRequestDto),
+    categoryCtrl.createCategory
+  );
 
-// Tạo danh mục mới - Kiểm tra dữ liệu đầu vào qua DTO
-router.post(
-  "/", 
-  validationMiddleware(CreateCategoryRequestDto), 
-  categoryController.createCategory
-);
-
-// Lấy danh sách danh mục - Hỗ trợ phân trang và tìm kiếm
-router.get("/", categoryController.getCategories);
-
-// Lấy thông tin chi tiết danh mục theo ID
-router.get("/:id", categoryController.getCategoryById);
-
-// Cập nhật thông tin danh mục - Validate dữ liệu gửi lên (cho phép cập nhật một phần)
-router.patch(
-  "/:id",
-  validationMiddleware(UpdateCategoryRequestDto, true),
-  categoryController.updateCategory
-);
-
-// Xóa danh mục - Thực hiện xóa mềm (Soft Delete) trong database
-router.delete("/:id", categoryController.deleteCategory);
+/**
+ * @swagger
+ * /api/v1/categories/{id}:
+ * get:
+ * summary: Chi tiết danh mục
+ * tags: [Categories]
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 200:
+ * description: Thành công
+ * patch:
+ * summary: Cập nhật danh mục
+ * tags: [Categories]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema:
+ * type: string
+ * requestBody:
+ * required: true
+ * content:
+ * application/json:
+ * schema:
+ * $ref: '#/components/schemas/UpdateCategoryRequestDto'
+ * responses:
+ * 200:
+ * description: Cập nhật thành công
+ * delete:
+ * summary: Xóa danh mục
+ * tags: [Categories]
+ * security:
+ * - bearerAuth: []
+ * parameters:
+ * - in: path
+ * name: id
+ * required: true
+ * schema:
+ * type: string
+ * responses:
+ * 204:
+ * description: Xóa thành công
+ */
+router
+  .route("/:id")
+  .get(categoryCtrl.getCategory)
+  .patch(
+    validationMiddleware(UpdateCategoryRequestDto),
+    categoryCtrl.updateCategory
+  )
+  .delete(categoryCtrl.deleteCategory);
 
 export default router;

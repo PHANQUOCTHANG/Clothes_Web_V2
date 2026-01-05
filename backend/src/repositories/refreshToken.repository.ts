@@ -1,34 +1,41 @@
 import RefreshTokenModel from "@/models/refreshToken.model";
 
-export class RefreshTokenRepository {
-  // Thay đổi: Sử dụng findOneAndUpdate với upsert
+export interface IRefreshTokenRepository {
+  create(data: any): Promise<any>;
+  findValid(token: string): Promise<any>;
+  revoke(token: string): Promise<any>;
+  revokeAllByUser(userId: string): Promise<any>;
+}
+
+export class RefreshTokenRepository implements IRefreshTokenRepository {
+  // Tạo hoặc cập nhật refresh token
   async create(data: any) {
     return RefreshTokenModel.findOneAndUpdate(
-      { userId: data.userId }, // Tìm theo userId
-      { 
-        token: data.token, 
-        expiresAt: data.expiresAt, 
-        revoked: false // Reset trạng thái khi login mới
+      { userId: data.userId },
+      {
+        token: data.token,
+        expiresAt: data.expiresAt,
+        revoked: false,
       },
-      { 
-        upsert: true,     // Nếu không tìm thấy thì tạo mới
-        new: true,        // Trả về bản ghi mới sau khi cập nhật
-        setDefaultsOnInsert: true 
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
       }
     );
   }
 
-  // Tìm refresh token hợp lệ (Giữ nguyên)
+  // Tìm refresh token hợp lệ
   async findValid(token: string) {
     return RefreshTokenModel.findOne({ token, revoked: false });
   }
 
-  // Thu hồi refresh token (Giữ nguyên)
+  // Thu hồi refresh token
   async revoke(token: string) {
     return RefreshTokenModel.updateOne({ token }, { revoked: true });
   }
 
-  // Thu hồi tất cả token của user (Giữ nguyên - hữu ích khi đổi pass)
+  // Thu hồi tất cả token của user
   async revokeAllByUser(userId: string) {
     return RefreshTokenModel.updateMany({ userId }, { revoked: true });
   }

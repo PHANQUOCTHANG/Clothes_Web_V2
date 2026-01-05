@@ -2,12 +2,12 @@
 "use client";
 import React from "react";
 import { AnimatePresence } from "framer-motion";
-import useForgotPasswordFlow from "@/features/auth/hooks/useForgotPassword";
-import ForgotEmailForm from "@/features/auth/components/ForgotEmailForm";
-import ForgotOTPForm from "@/features/auth/components/ForgotOTPForm";
-import ForgotNewPasswordForm from "@/features/auth/components/ForgotNewPasswordForm";
-import PageTemplate from "@/features/auth/components/PageTemplate";
-import { CURRENT_THEME } from "@/features/auth/constants/constantsAuth";
+import useForgotPasswordFlow from "@/features/client/auth/hooks/useForgotPassword";
+import ForgotEmailForm from "@/features/client/auth/components/ForgotEmailForm";
+import ForgotOTPForm from "@/features/client/auth/components/ForgotOTPForm";
+import ForgotNewPasswordForm from "@/features/client/auth/components/ForgotNewPasswordForm";
+import PageTemplate from "@/features/client/auth/components/PageTemplate";
+import { CURRENT_THEME } from "@/features/client/auth/constants/constantsAuth";
 
 const ForgotPasswordPage: React.FC = () => {
   const hook = useForgotPasswordFlow();

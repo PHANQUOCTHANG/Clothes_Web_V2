@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import HeroSlider from "@/features/home/components/HeroSlider";
-import MainContent from "@/features/home/components/MainContent";
 import createRipple from "@/utils/createRipple";
 import { QuickViewModal } from "@/components/common/QuickViewModal";
-import { AddToCartModal } from "@/features/shop/components/AddToCartModal";
-import { Product, Color } from "@/features/shop/types";
-import { COLORS } from "@/features/shop/constants";
+import HeroSlider from "@/features/client/home/components/HeroSlider";
+import MainContent from "@/features/client/home/components/MainContent";
+import { AddToCartModal } from "@/features/client/shop/components/AddToCartModal";
+import { Product } from "@/features/client/shop/types";
 
 // Dữ liệu Slide mẫu (Nên đặt ở một file constants riêng nếu dữ liệu lớn)
 const HERO_SLIDES = [
@@ -35,20 +34,32 @@ const HERO_SLIDES = [
 
 // Sample product for QuickView
 const SAMPLE_PRODUCT: Product = {
-  id: 1,
+  id: "sample-1",
   name: "Sản phẩm Megastore Premium",
+  nameNoAccent: "San pham Megastore Premium",
+  slug: "san-pham-megastore-premium",
   price: 140,
-  imageUrl: "https://placehold.co/500x750/f3f4f6/333?text=Anh+San+Pham",
-  imageHoverUrl: "https://placehold.co/500x750/e5e7eb/333?text=Anh+Hover",
-  colors: ["#000000", "#FFFFFF", "#FF6B6B"],
+  discount: 10,
   description:
     "Sản phẩm chất lượng cao được chế tác từ chất liệu tốt nhất. Hoàn hảo cho mọi dịp.",
-  modalImages: [
+  images: [
+    "https://placehold.co/500x750/f3f4f6/333?text=Anh+San+Pham",
+    "https://placehold.co/500x750/e5e7eb/333?text=Anh+Hover",
     "https://placehold.co/500x750/f3f4f6/333?text=Anh+San+Pham+1",
     "https://placehold.co/500x750/e5e7eb/333?text=Anh+San+Pham+2",
   ],
-  availableSizes: ["XS", "S", "M", "L", "XL", "XXL"],
-  discount: "10%",
+  color: { name: "Đen", code: "#000000" },
+  size: "XS,S,M,L,XL,XXL",
+  stock: 20,
+  rating: 4.5,
+  amountBuy: 150,
+  productNew: true,
+  category: "Áo Khoác",
+  status: "active",
+  deleted: false,
+  deletedAt: null,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 export default function HomePage() {
@@ -132,14 +143,12 @@ export default function HomePage() {
       {/* QuickView Modal */}
       <QuickViewModal
         product={selectedProduct}
-        colors={COLORS}
         onClose={handleCloseQuickView}
       />
 
       {/* Add to Cart Modal */}
       <AddToCartModal
         product={selectedProductForAddToCart}
-        colors={COLORS}
         onClose={handleCloseAddToCart}
       />
     </>

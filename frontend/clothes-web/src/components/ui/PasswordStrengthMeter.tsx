@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { getPasswordStrength } from "@/features/auth/constants/constantsAuth";
+import { getPasswordStrength } from "@/features/client/auth/constants/constantsAuth";
 
 interface PasswordStrengthMeterProps {
   password: string;

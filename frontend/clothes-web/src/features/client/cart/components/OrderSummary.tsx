@@ -7,47 +7,49 @@ const OrderSummary = ({
   onCheckout,
   onContinue,
 }: any) => (
-  <div className="lg:col-span-1 p-6 bg-white border border-gray-200 rounded-xl shadow-lg h-min sticky top-20">
-    <h2 className="text-2xl font-bold text-gray-800 mb-6">Tóm tắt đơn hàng</h2>
+  <div className="lg:col-span-1 p-6 bg-white border border-gray-200 rounded-lg shadow-sm h-min sticky top-20">
+    <h2 className="text-lg font-semibold text-gray-900 mb-6">
+      Tóm tắt đơn hàng
+    </h2>
 
-    <div className="space-y-3 mb-6">
-      <div className="flex justify-between text-base">
-        <span className="text-gray-600">Tổng phụ</span>
-        <span className="font-semibold">${subtotal?.toFixed(2)}</span>
+    <div className="space-y-4 mb-6 text-sm">
+      <div className="flex justify-between">
+        <span className="text-gray-600">Tổng tiền hàng</span>
+        <span className="font-medium text-gray-900">
+          ${subtotal?.toFixed(2)}
+        </span>
       </div>
-      <div className="flex justify-between text-base">
+      <div className="flex justify-between">
         <span className="text-gray-600">Vận chuyển</span>
-        <span className="font-semibold">
+        <span className="font-medium text-gray-900">
           {shipping === 0 ? (
-            <span className="text-green-600">Miễn phí</span>
+            <span className="text-gray-900">Miễn phí</span>
           ) : (
             `$${shipping.toFixed(2)}`
           )}
         </span>
       </div>
-      <div className="flex justify-between border-b border-gray-200 pb-3 text-base">
+      <div className="flex justify-between border-t border-gray-200 pt-4">
         <span className="text-gray-600">Thuế (5%)</span>
-        <span className="font-semibold">${tax.toFixed(2)}</span>
+        <span className="font-medium text-gray-900">${tax.toFixed(2)}</span>
       </div>
-      <div className="flex justify-between pt-3">
-        <span className="text-xl font-bold text-gray-900">TỔNG CỘNG</span>
-        <span className="text-2xl font-bold text-blue-600">
-          ${total.toFixed(2)}
-        </span>
+      <div className="flex justify-between border-t border-gray-200 pt-4 text-base">
+        <span className="font-semibold text-gray-900">Tổng cộng</span>
+        <span className="font-bold text-gray-900">${total.toFixed(2)}</span>
       </div>
     </div>
 
     <button
       onClick={onCheckout}
-      className="w-full bg-blue-600 text-white px-4 py-3 text-sm font-semibold hover:bg-blue-700 transition mb-2 rounded-md"
+      className="w-full bg-gray-900 text-white px-4 py-3 text-sm font-medium hover:bg-gray-800 active:bg-gray-950 transition-colors rounded-lg mb-3"
     >
-      Tiến hành Thanh toán
+      Tiến hành thanh toán
     </button>
     <button
       onClick={onContinue}
-      className="w-full text-gray-800 border border-gray-300 px-4 py-3 text-sm font-semibold hover:bg-gray-100 transition rounded-md"
+      className="w-full text-gray-900 border border-gray-300 px-4 py-3 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors rounded-lg"
     >
-      Tiếp tục Mua sắm
+      Tiếp tục mua sắm
     </button>
   </div>
 );

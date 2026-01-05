@@ -1,4 +1,4 @@
-import { AddressRequestDto } from "@/dto/request/address.request.dto";
+import { AddressRequestDto } from "@/dto/request/address.request";
 import { Type } from "class-transformer";
 import {
   IsEmail,

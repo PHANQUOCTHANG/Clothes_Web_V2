@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
-import { useState } from "react";
 import { Star, ArrowRightLeft, Eye } from "lucide-react";
-import { IProductData } from "../../types";
+import { IProduct } from "@/types/product";
 import { OverlayTooltip } from "../common/Utilities";
 import { ALL_PRODUCTS } from "../../constants";
 
 interface RelatedProductCardProps {
-  product: IProductData;
-  setCurrentProduct: (p: IProductData) => void;
+  product: IProduct | any;
+  setCurrentProduct?: (p: IProduct | any) => void;
   onQuickView?: () => void;
 }
 
@@ -16,27 +16,19 @@ export const RelatedProductCard = ({
   setCurrentProduct,
   onQuickView,
 }: RelatedProductCardProps) => {
-  const [isHovered, setIsHovered] = useState<boolean>(false);
-
-  const defaultImage = product.images[0]?.url;
-  const hoverImage =
-    product.images.length > 1 ? product.images[1].url : defaultImage;
-  const displayImage =
-    isHovered && hoverImage !== defaultImage ? hoverImage : defaultImage;
-
   const handleClick = () => {
-    const fullProductData = ALL_PRODUCTS.find((p) => p.id === product.id);
-    if (fullProductData) {
-      setCurrentProduct(fullProductData);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (setCurrentProduct) {
+      const fullProductData = ALL_PRODUCTS.find((p) => p.id === product.id);
+      if (fullProductData) {
+        setCurrentProduct(fullProductData);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   };
 
   return (
     <div
       className="group flex flex-col p-2 cursor-pointer"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
     >
       <div className="relative aspect-3/4 overflow-hidden rounded-lg bg-gray-100">
@@ -46,7 +38,11 @@ export const RelatedProductCard = ({
           </span>
         )}
         <img
-          src={displayImage}
+          src={
+            product.images?.[0] ||
+            product.image ||
+            "https://placehold.co/300x400"
+          }
           alt={product.name}
           className="w-full h-full object-cover transition-transform duration-300 transform group-hover:scale-105"
           loading="lazy"
@@ -91,11 +87,6 @@ export const RelatedProductCard = ({
           <span className="font-semibold text-gray-900">
             ${product.price.toFixed(2)}
           </span>
-          {product.oldPrice && (
-            <span className="ml-2 text-xs text-gray-400 line-through">
-              ${product.oldPrice.toFixed(2)}
-            </span>
-          )}
         </p>
       </div>
     </div>

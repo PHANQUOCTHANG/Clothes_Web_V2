@@ -1,60 +1,121 @@
 import AppError from "@/utils/appError";
-import { ProductRepository } from "@/repositories/product.repository";
-import { CreateProductRequestDto, UpdateProductRequestDto } from "@/dto/request/product.request";
+import { IProductRepository } from "@/repositories/product.repository";
+import {
+  CreateProductRequestDto,
+  UpdateProductRequestDto,
+} from "@/dto/request/product.request";
 import { IProductDocument } from "@/interface/product.interface";
-import { BaseQuery, IPaginatedResult } from "@/interface/query.interface";
+import {
+  BaseQuery,
+  IPaginatedResult,
+  normalizeQuery,
+} from "@/interface/query.interface";
 import slugify from "slugify";
 
-export class ProductService {
-  constructor(private readonly productRepo: ProductRepository) {}
+export interface IProductService {
+  create(dto: CreateProductRequestDto): Promise<any>;
+  findAll(query: any): Promise<any>;
+  findById(id: string): Promise<any>;
+  findBySlug(slug: string): Promise<any>;
+  update(id: string, dto: UpdateProductRequestDto): Promise<any>;
+  delete(id: string): Promise<void>;
+}
 
-  // Xử lý logic khi tạo mới sản phẩm
-  async createProduct(dto: CreateProductRequestDto): Promise<IProductDocument> {
-    // 1. Tự động tạo slug thân thiện cho SEO (ví dụ: "Áo Polo" -> "ao-polo")
+export class ProductService implements IProductService {
+  constructor(private readonly productRepo: IProductRepository) {}
+
+  // Tạo sản phẩm mới kèm xử lý slug và tên không dấu
+  async create(dto: CreateProductRequestDto): Promise<any> {
     const slug = slugify(dto.name, { lower: true, strict: true });
-    
-    // 2. Chuyển tên có dấu thành không dấu để hỗ trợ tìm kiếm nhanh hơn
-    const nameNoAccent = dto.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const nameNoAccent = dto.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
-    return this.productRepo.create({
+    const product = await this.productRepo.create({
       ...dto,
       slug,
       nameNoAccent,
     });
+
+    return this.mapToResponse(product);
   }
 
-  // Lấy danh sách sản phẩm
-  async getProducts(query: BaseQuery): Promise<IPaginatedResult<IProductDocument>> {
-    return this.productRepo.findAll(query);
+  // Lấy danh sách sản phẩm kèm chuẩn hóa query
+  async findAll(query: any): Promise<any> {
+    const normalizedQuery = normalizeQuery(query);
+    const result = await this.productRepo.findAll(normalizedQuery);
+
+    return {
+      ...result,
+      data: result.data.map((p: any) => this.mapToResponse(p)),
+    };
   }
 
-  // Lấy chi tiết sản phẩm, quăng lỗi 404 nếu không thấy
-  async getProductById(id: string): Promise<IProductDocument> {
+  // Lấy chi tiết sản phẩm theo ID
+  async findById(id: string): Promise<any> {
     const product = await this.productRepo.findById(id);
     if (!product) throw new AppError("Sản phẩm không tồn tại", 404);
-    return product;
+
+    return this.mapToResponse(product);
   }
 
-  // Cập nhật sản phẩm và làm mới lại slug nếu người dùng đổi tên
-  async updateProduct(id: string, dto: UpdateProductRequestDto): Promise<IProductDocument> {
+  // Tìm kiếm sản phẩm thông qua đường dẫn slug
+  async findBySlug(slug: string): Promise<any> {
+    const product = await this.productRepo.findBySlug(slug);
+    if (!product) throw new AppError("Sản phẩm không tồn tại", 404);
+
+    return this.mapToResponse(product);
+  }
+
+  // Cập nhật thông tin sản phẩm và làm mới slug nếu đổi tên
+  async update(id: string, dto: UpdateProductRequestDto): Promise<any> {
     const updateData: any = { ...dto };
-    
-    // Nếu có đổi tên thì phải update lại cả slug và nameNoAccent
+
     if (dto.name) {
       updateData.slug = slugify(dto.name, { lower: true, strict: true });
-      updateData.nameNoAccent = dto.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      updateData.nameNoAccent = dto.name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
     }
 
     const product = await this.productRepo.updateById(id, updateData);
     if (!product) throw new AppError("Sản phẩm không tồn tại", 404);
-    return product;
+
+    return this.mapToResponse(product);
   }
 
-  // Kiểm tra tồn tại trước khi tiến hành xoá mềm
-  async deleteProduct(id: string): Promise<void> {
+  // Xóa sản phẩm (gọi hàm xóa mềm từ repo)
+  async delete(id: string): Promise<void> {
     const product = await this.productRepo.findById(id);
-    if (!product) throw new AppError("Sản phẩm không tồn tại", 404);
-    
-    await this.productRepo.softDelete(id);
+    if (!product) throw new AppError("Sản phẩm không tồn tại để xóa", 404);
+
+    await this.productRepo.deleteById(id);
+  }
+
+  // Ánh xạ dữ liệu trả về và tính toán giá cuối cùng
+  private mapToResponse(product: IProductDocument): any {
+    const basePrice = product.price ? Number(product.price.toString()) : 0;
+    const discount = product.discount || 0;
+
+    return {
+      id: product._id || product.id,
+      name: product.name,
+      slug: product.slug,
+      price: basePrice,
+      discount: discount,
+      finalPrice: basePrice * (1 - discount / 100),
+      description: product.description || "",
+      images: product.images || [],
+      stock: product.stock || 0,
+      status: product.status,
+      category: product.category,
+      rating: product.rating || 0,
+      amountBuy: product.amountBuy || 0,
+      productNew: product.productNew,
+      color: product.color,
+      size: product.size || "",
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    };
   }
 }

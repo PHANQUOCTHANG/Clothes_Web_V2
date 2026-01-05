@@ -1,33 +1,41 @@
-import { Request, Response } from "express";
-import asyncHandler from "@/utils/asyncHandler";
-import { ReviewService } from "@/services/review.service";
-import { ReviewResponseDto } from "@/dto/response/review.response";
+import { reviewService } from "@/config/container";
 import { normalizeQuery } from "@/interface/query.interface";
+import asyncHandler from "@/utils/asyncHandler";
+import { Request, Response } from "express";
 
-export class ReviewController {
-  constructor(private readonly reviewService: ReviewService) {}
-
-  // POST /reviews
-  createReview = asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user.id; // Lấy từ authMiddleware
-    const review = await this.reviewService.createReview(userId, req.body);
-    res.status(201).json(new ReviewResponseDto(review));
+// POST | /api/v1/reviews | Tạo đánh giá mới cho sản phẩm
+export const createReview = asyncHandler(async (req: any, res: Response) => {
+  // Lấy userId từ middleware xác thực (req.user)
+  const data = await reviewService.create(req.user.id, req.body);
+  
+  res.status(201).json({ 
+    status: "success", 
+    data 
   });
+});
 
-  // GET /reviews/product/:productId
-  getProductReviews = asyncHandler(async (req: Request, res: Response) => {
-    const query = normalizeQuery(req.query);
-    const result = await this.reviewService.getReviews(query, req.params.productId);
-
-    res.json({
-      ...result,
-      data: result.data.map(rev => new ReviewResponseDto(rev)),
-    });
+// GET | /api/v1/reviews/product/:productId | Lấy danh sách đánh giá của một sản phẩm
+export const getReviewsByProduct = asyncHandler(async (req: Request, res: Response) => {
+  const query = normalizeQuery(req.query);
+  const result = await reviewService.findAll(query, req.params.productId);
+  
+  res.status(200).json({ 
+    status: "success", 
+    results: result.data.length,
+    total: result.total,
+    page: result.page,
+    totalPages: result.totalPages,
+    data: result.data 
   });
+});
 
-  // DELETE /reviews/:id
-  deleteReview = asyncHandler(async (req: Request, res: Response) => {
-    await this.reviewService.deleteReview(req.params.id);
-    res.status(204).send();
+// DELETE | /api/v1/reviews/:id | Xóa đánh giá (Xóa mềm)
+export const deleteReview = asyncHandler(async (req: Request, res: Response) => {
+  await reviewService.delete(req.params.id);
+  
+  // Trả về 204 No Content cho hành động xóa thành công
+  res.status(204).json({ 
+    status: "success", 
+    data: null 
   });
-}
+});

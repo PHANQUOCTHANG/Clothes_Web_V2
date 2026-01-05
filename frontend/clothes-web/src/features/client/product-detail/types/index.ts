@@ -1,72 +1,60 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export interface IColorOption {
-  name: string;
-  code: string;
+import { IProduct, IColor, IProductReview } from "@/types/product";
+
+/**
+ * Product Detail Feature Types
+ */
+
+// Color Option Type
+export interface IColorOption extends IColor {
+  count?: number;
 }
 
-export interface IProductImage {
-  url: string;
-  alt: string;
+// Product Detail Type (extends base Product)
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface IProductDetail extends IProduct {
+  // All fields inherited from IProduct which now includes reviews and relatedProducts
 }
 
-export interface IProductData {
-  id: string;
-  name: string;
-  price: number;
-  rating: number;
-  reviewCount: number;
-  description: string;
-  colors: IColorOption[];
-  sizes: string[];
-  stock: number;
-  sku: string;
-  categories: string;
-  deliveryDate: string;
-  images: IProductImage[];
-  mainImageUrl: string;
-  oldPrice?: number | null;
-  discount?: number | null;
-}
-
+// Tab Content Type
 export interface ITab {
   key: string;
   label: string;
+  content?: React.ReactNode;
 }
 
-export interface IMessageProps {
+// Message Type
+export interface IMessage {
   message: string;
-  type: "success" | "error";
+  type: "success" | "error" | "warning" | "info";
 }
 
-export interface IRelatedProductCardProps {
-  product: IProductData;
-  setCurrentProduct: (p: IProductData) => void;
+// Product Selection State
+export interface IProductSelection {
+  color: IColorOption | null;
+  size: string | null;
+  quantity: number;
+  imageIndex: number;
 }
 
-export interface IUseQueryReturn<T> {
-  data: T | undefined;
-  isLoading: boolean;
-  error: any;
-}
-
+// Hook Return Types
 export interface IUseProductDetailsReturn {
-  currentProduct: IProductData;
-  relatedProducts: IProductData[];
+  currentProduct: IProductDetail;
+  relatedProducts: IProduct[];
   currentImageIndex: number;
   selectedColor: IColorOption | null;
   selectedSize: string | null;
   quantity: number;
   message: string;
-  messageType: "success" | "error";
+  messageType: "success" | "error" | "warning" | "info";
   activeTab: string;
   relatedProductsRef: React.RefObject<HTMLDivElement>;
   isProductLoading: boolean;
   isRelatedLoading: boolean;
-  productError: any;
+  productError: unknown;
   canScrollLeft: boolean;
   canScrollRight: boolean;
-  checkScrollStatus: any;
-  setCurrentProduct: (p: IProductData) => void;
+  checkScrollStatus: () => void;
+  setCurrentProduct: (product: IProductDetail) => void;
   setCurrentImageIndex: (index: number) => void;
   setSelectedColor: (color: IColorOption | null) => void;
   setSelectedSize: (size: string | null) => void;
@@ -78,4 +66,34 @@ export interface IUseProductDetailsReturn {
   handleBuyNow: () => void;
   handleScrollLeft: () => void;
   handleScrollRight: () => void;
+}
+
+export interface IUseProductGalleryReturn {
+  currentImageIndex: number;
+  setCurrentImageIndex: (index: number) => void;
+  handleNextImage: () => void;
+  handlePrevImage: () => void;
+}
+
+export interface IUseProductSelectionReturn extends IProductSelection {
+  setColor: (color: IColorOption | null) => void;
+  setSize: (size: string | null) => void;
+  setQuantity: (quantity: number) => void;
+  setImageIndex: (index: number) => void;
+  resetSelection: () => void;
+}
+
+export interface IUseProductReviewsReturn {
+  reviews: IProductReview[];
+  isLoading: boolean;
+  error: unknown;
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: Record<number, number>;
+}
+
+export interface IUseProductTabsReturn {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  tabs: ITab[];
 }

@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
-import { AddressRequestDto } from "./address.request.dto";
+import { AddressRequestDto } from "./address.request";
 
 export class CreateUserRequestDto {
   @IsString({ message: "Họ tên phải là chuỗi" })

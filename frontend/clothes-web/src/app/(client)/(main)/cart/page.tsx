@@ -1,13 +1,24 @@
 "use client";
 
-import { CartItem } from "@/features/cart/components/CartItem";
-import EmptyCartState from "@/features/cart/components/EmptyCartState";
-import FreeShippingBar from "@/features/cart/components/FreeShippingBar";
-import OrderSummary from "@/features/cart/components/OrderSummary";
-import { CartPageProps, ICartItem } from "@/features/cart/types";
-import React, { useMemo, useState } from "react";
+import { CartItem } from "@/features/client/cart/components/CartItem";
+import EmptyCartState from "@/features/client/cart/components/EmptyCartState";
+import FreeShippingBar from "@/features/client/cart/components/FreeShippingBar";
+import OrderSummary from "@/features/client/cart/components/OrderSummary";
+import { CartPageProps } from "@/features/client/cart/types";
+import React, { useEffect } from "react";
 import { SAMPLE_CART_ITEMS } from "@/data/sampleCartData";
 import createRipple from "@/utils/createRipple";
+import {
+  useCart,
+  useCartCalculations,
+  useCartPersistence,
+  useCartUI,
+} from "@/features/client/cart/hooks";
+import {
+  PricingService,
+  PromocodeService,
+  CartStorageService,
+} from "@/features/client/cart/services";
 
 // Ngưỡng giá trị để được miễn phí vận chuyển
 const FREE_SHIPPING_THRESHOLD = 200.0;
@@ -16,21 +27,34 @@ const TAX_RATE = 0.05;
 
 // Component wrapper: Quản lý trạng thái giỏ hàng và logic xử lý
 function CartPageWrapper() {
-  const [cartItems, setCartItems] = useState<ICartItem[]>(SAMPLE_CART_ITEMS);
+  // Hooks: quản lý giỏ hàng
+  const {
+    cartItems,
+    isEmpty,
+    totalItems,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+  } = useCart(SAMPLE_CART_ITEMS);
 
-  // Cập nhật số lượng sản phẩm trong giỏ
-  const updateQuantity = (id: string | number, qty: number) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: Math.max(1, qty) } : item
-      )
-    );
-  };
+  // Hook: tính toán giá
+  const pricing = useCartCalculations(cartItems, {
+    taxRate: TAX_RATE,
+    freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+    shippingCost: 15,
+  });
 
-  // Xóa sản phẩm khỏi giỏ hàng
-  const removeItem = (id: string | number) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  // Hook: lưu trữ giỏ hàng
+  const { saveCart, loadCart, clearCartStorage, hasPersistedCart } =
+    useCartPersistence(cartItems, {
+      storageKey: "cart_items",
+      enableAutoSave: true,
+      enableAutoRestore: true,
+    });
+
+  // Hook: UI state
+  const { isCartOpen, error, setError, clearError } = useCartUI();
 
   // Xử lý hiệu ứng ripple click
   const handleRipple = (e: React.MouseEvent<HTMLElement>) => {
@@ -42,83 +66,92 @@ function CartPageWrapper() {
     console.log("Navigate to:", view);
   };
 
+  // Load cart từ localStorage khi component mount
+  useEffect(() => {
+    if (hasPersistedCart) {
+      const saved = loadCart();
+      if (saved && saved.length > 0) {
+        saved.forEach((item) => addItem(item));
+      }
+    }
+  }, [hasPersistedCart, loadCart, addItem]);
+
   return (
     <CartPage
       cartItems={cartItems}
-      setCartItems={setCartItems}
+      isEmpty={isEmpty}
+      totalItems={totalItems}
+      pricing={pricing}
       updateQuantity={updateQuantity}
       removeItem={removeItem}
+      clearCart={clearCart}
       createRipple={handleRipple}
       setCurrentView={handleSetView}
     />
   );
 }
 
-const CartPage: React.FC<CartPageProps> = ({
+interface CartPageInternalProps extends Omit<CartPageProps, "setCartItems"> {
+  isEmpty: boolean;
+  totalItems: number;
+  pricing: ReturnType<typeof useCartCalculations>;
+  clearCart: () => void;
+}
+
+const CartPage: React.FC<CartPageInternalProps> = ({
   cartItems,
+  isEmpty,
+  totalItems,
+  pricing,
   updateQuantity,
   removeItem,
+  clearCart,
   createRipple,
   setCurrentView,
 }) => {
-  // Tính toán: tổng tiền, vận chuyển, thuế và tổng cộng
-  const { subtotal, isFreeShipping, remaining, shipping, tax, total } =
-    useMemo(() => {
-      const sum = cartItems?.reduce(
-        (acc, item) =>
-          acc + parseFloat(item.price.replace("$", "")) * item.quantity,
-        0
-      );
-      const free = sum >= FREE_SHIPPING_THRESHOLD;
-      const shippingCost = free ? 0 : 15.0;
-      const estimatedTax = sum * TAX_RATE;
-
-      return {
-        subtotal: sum,
-        isFreeShipping: free,
-        remaining: Math.max(0, FREE_SHIPPING_THRESHOLD - sum),
-        shipping: shippingCost,
-        tax: estimatedTax,
-        total: sum + shippingCost + estimatedTax,
-      };
-    }, [cartItems]);
-
-  const isEmpty = cartItems?.length === 0;
+  const {
+    subtotal,
+    isFreeShipping,
+    remainingForFreeShip,
+    shipping,
+    tax,
+    total,
+  } = pricing;
 
   return (
-    <section className="px-4 sm:px-6 max-w-7xl mx-auto pt-6 pb-12">
-      {/* Đường dẫn điều hướng (Breadcrumb) */}
-      <div className="mb-8 text-sm text-gray-500">
+    <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pt-8 pb-16">
+      {/* Breadcrumb */}
+      <div className="mb-8 text-sm text-gray-600 flex items-center gap-2">
         <button
           onClick={() => setCurrentView("home")}
-          className="hover:text-red-600"
+          className="hover:text-gray-900 transition-colors"
         >
-          Trang Chủ
+          Trang chủ
         </button>
-        <span className="mx-2 text-gray-400">/</span>
-        <span className="text-gray-900 font-semibold">Giỏ hàng</span>
+        <span className="text-gray-400">/</span>
+        <span className="text-gray-900 font-medium">Giỏ hàng</span>
       </div>
 
-      <h1 className="text-4xl font-bold text-gray-900 mb-8 border-b border-gray-100 pb-3">
-        Giỏ hàng của bạn
-      </h1>
+      {/* Title */}
+      <h1 className="text-3xl font-semibold text-gray-900 mb-8">Giỏ hàng</h1>
 
       {isEmpty ? (
-        // Hiển thị trạng thái giỏ hàng trống
+        // Trạng thái giỏ trống
         <EmptyCartState onNavigate={() => setCurrentView("shop")} />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Cột trái: Danh sách sản phẩm trong giỏ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cột trái: Danh sách sản phẩm */}
           <div className="lg:col-span-2">
-            <div className="hidden md:grid grid-cols-5 gap-4 px-4 py-3 bg-gray-100 font-bold text-sm text-gray-800 rounded-lg mb-4">
+            {/* Header danh sách */}
+            <div className="hidden md:grid grid-cols-5 gap-4 px-2 py-3 border-b border-gray-200 mb-4 text-xs font-semibold text-gray-700">
               <span className="col-span-2">Sản phẩm</span>
               <span className="col-span-1 text-center">Số lượng</span>
-              <span className="col-span-1 text-right">Subtotal</span>
+              <span className="col-span-1 text-right">Giá</span>
               <span className="col-span-1 text-right">Hành động</span>
             </div>
 
-            {/* Danh sách các mục trong giỏ */}
-            <div className="divide-y divide-gray-100">
+            {/* Danh sách items */}
+            <div>
               {cartItems?.map((item) => (
                 <CartItem
                   key={item.id}
@@ -130,15 +163,15 @@ const CartPage: React.FC<CartPageProps> = ({
               ))}
             </div>
 
-            {/* Thanh thông báo miễn phí vận chuyển */}
+            {/* Free shipping bar */}
             <FreeShippingBar
               isFreeShipping={isFreeShipping}
-              remaining={remaining}
+              remaining={remainingForFreeShip}
               progress={(subtotal / FREE_SHIPPING_THRESHOLD) * 100}
             />
           </div>
 
-          {/* Cột phải: Tóm tắt đơn hàng (giá, thuế, tổng cộng) */}
+          {/* Cột phải: Order summary */}
           <OrderSummary
             subtotal={subtotal}
             shipping={shipping}

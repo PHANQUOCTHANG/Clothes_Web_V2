@@ -1,11 +1,12 @@
 "use client";
 
+import { BLOG_POSTS } from "@/data/mockHome";
+import BlogFeaturedPost from "@/features/client/blog/components/BlogFeaturedPost";
+import BlogGridPost from "@/features/client/blog/components/BlogGridPost";
 import React from "react";
 
 // 2. Import dữ liệu mock từ file constants
-import { BLOG_POSTS } from "../../../data/mockHome";
-import BlogFeaturedPost from "@/features/blog/components/BlogFeaturedPost";
-import BlogGridPost from "@/features/blog/components/BlogGridPost";
+
 
 interface BlogPageProps {
   /** Hàm điều hướng giữa các view (home, shop, blog, v.v.) */

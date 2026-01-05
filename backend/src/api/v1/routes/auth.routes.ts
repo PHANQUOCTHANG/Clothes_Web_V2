@@ -1,85 +1,275 @@
 import { Router } from "express";
-import { UserRepository } from "@/repositories/user.repository";
-import { RefreshTokenRepository } from "@/repositories/refreshToken.repository";
-import { OtpRepository } from "@/repositories/otp.repository";
-import { AuthService } from "@/services/auth.service";
-import { AuthController } from "@/controllers/auth.controller";
+import * as authCtrl from "@/controllers/auth.controller";
 import {
   LoginRequestDto,
   RefreshTokenRequestDto,
   RegisterRequestDto,
   ResetPasswordRequestDto,
 } from "@/dto/request/auth.request";
-import asyncHandler from "@/utils/asyncHandler";
 import validationMiddleware from "@/middleware/validate.middleware";
 import {
   SendOtpRequestDto,
   VerifyOtpRequestDto,
 } from "@/dto/request/otp.request";
-import { OtpService } from "@/services/otp.service";
 
 const router = Router();
 
-// Khởi tạo dependency (DI thủ công, dễ test & mở rộng)
-const userRepo = new UserRepository();
-const refreshRepo = new RefreshTokenRepository();
-const otpRepo = new OtpRepository();
-
-const authService = new AuthService(userRepo, refreshRepo, otpRepo);
-const otpService = new OtpService(otpRepo, userRepo);
-const authController = new AuthController(authService, otpService);
-
 // ================= AUTH =================
 
-// Đăng ký tài khoản mới - Kiểm tra dữ liệu đầu vào và lưu thông tin người dùng
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Đăng ký tài khoản mới
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/register | Đăng ký tài khoản mới
 router.post(
   "/register",
   validationMiddleware(RegisterRequestDto),
-  asyncHandler(authController.register)
+  authCtrl.register
 );
 
-// Đăng nhập - Xác thực thông tin và cấp phát bộ mã Access Token & Refresh Token
-router.post(
-  "/login",
-  validationMiddleware(LoginRequestDto),
-  asyncHandler(authController.login)
-);
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Đăng nhập
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công
+ *       400:
+ *         description: Thông tin đăng nhập không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/login | Đăng nhập
+router.post("/login", validationMiddleware(LoginRequestDto), authCtrl.login);
 
-// Làm mới Access Token - Sử dụng Refresh Token để duy trì phiên đăng nhập mà không cần login lại
+/**
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: Làm mới access token
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Token đã được làm mới
+ *       401:
+ *         description: Token không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/refresh-token | Làm mới access token
 router.post(
   "/refresh-token",
   validationMiddleware(RefreshTokenRequestDto),
-  asyncHandler(authController.refresh)
+  authCtrl.refresh
 );
 
-// Đăng xuất - Thu hồi/Xóa Refresh Token để kết thúc phiên làm việc an toàn
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Đăng xuất
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Đăng xuất thành công
+ *       401:
+ *         description: Không được phép
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/logout | Đăng xuất
 router.post(
   "/logout",
   validationMiddleware(RefreshTokenRequestDto),
-  asyncHandler(authController.logout)
+  authCtrl.logout
 );
 
 // ================= OTP =================
 
-// Gửi mã OTP - Tạo và gửi mã xác thực qua Email/SMS phục vụ quên mật khẩu hoặc xác minh
+/**
+ * @swagger
+ * /api/auth/send-otp:
+ *   post:
+ *     summary: Gửi OTP
+ *     tags:
+ *       - OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: OTP đã được gửi
+ *       400:
+ *         description: Email không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/send-otp | Gửi OTP
 router.post(
   "/send-otp",
   validationMiddleware(SendOtpRequestDto),
-  asyncHandler(authController.sendOtp)
+  authCtrl.sendOtp
 );
 
-// Xác thực mã OTP - Kiểm tra mã người dùng nhập vào có khớp với mã đã gửi hay không
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: Xác thực OTP
+ *     tags:
+ *       - OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@example.com
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: OTP xác thực thành công
+ *       400:
+ *         description: OTP không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/verify-otp | Xác thực OTP
 router.post(
   "/verify-otp",
   validationMiddleware(VerifyOtpRequestDto),
-  asyncHandler(authController.verifyOtp)
+  authCtrl.verifyOtp
 );
 
-// Đặt lại mật khẩu - Cho phép cập nhật mật khẩu mới sau khi đã xác thực OTP thành công
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Đặt lại mật khẩu
+ *     tags:
+ *       - OTP
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - newPassword
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@example.com
+ *               newPassword:
+ *                 type: string
+ *                 example: newpassword123
+ *     responses:
+ *       200:
+ *         description: Mật khẩu đã được đặt lại thành công
+ *       400:
+ *         description: Dữ liệu không hợp lệ
+ *       500:
+ *         description: Lỗi server
+ */
+// POST | /api/auth/reset-password | Đặt lại mật khẩu
 router.post(
   "/reset-password",
   validationMiddleware(ResetPasswordRequestDto),
-  asyncHandler(authController.resetPassword)
+  authCtrl.resetPassword
 );
 
 export default router;

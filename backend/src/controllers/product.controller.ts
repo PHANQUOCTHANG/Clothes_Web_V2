@@ -1,45 +1,77 @@
-import { Request, Response } from "express";
-import asyncHandler from "@/utils/asyncHandler";
-import { ProductService } from "@/services/product.service";
-import { ProductResponseDto } from "@/dto/response/product.response";
+import { productService } from "@/config/container";
 import { normalizeQuery } from "@/interface/query.interface";
+import asyncHandler from "@/utils/asyncHandler";
+import { Request, Response } from "express";
 
-export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+// POST | /api/v1/products | Tạo sản phẩm mới
+export const createProduct = asyncHandler(
+  async (req: Request, res: Response) => {
+    const data = await productService.create(req.body);
 
-  // POST /products - Tạo sản phẩm
-  createProduct = asyncHandler(async (req: Request, res: Response) => {
-    const product = await this.productService.createProduct(req.body);
-    // Trả về dữ liệu thông qua Response DTO để lọc bớt trường nội bộ
-    res.status(201).json(new ProductResponseDto(product));
-  });
-
-  // GET /products - Lấy danh sách (phân trang + search)
-  getProducts = asyncHandler(async (req: Request, res: Response) => {
-    const query = normalizeQuery(req.query); // Chuẩn hoá page, limit từ URL
-    const result = await this.productService.getProducts(query);
-
-    res.json({
-      ...result,
-      data: result.data.map(p => new ProductResponseDto(p)), // Map từng phần tử qua DTO
+    res.status(201).json({
+      status: "success",
+      data,
     });
-  });
+  }
+);
 
-  // GET /products/:id - Lấy chi tiết
-  getProductById = asyncHandler(async (req: Request, res: Response) => {
-    const product = await this.productService.getProductById(req.params.id);
-    res.json(new ProductResponseDto(product));
-  });
+// GET | /api/v1/products | Lấy danh sách sản phẩm (Phân trang & Search)
+export const getProducts = asyncHandler(async (req: Request, res: Response) => {
+  const query = normalizeQuery(req.query);
+  const result = await productService.findAll(query);
 
-  // PATCH /products/:id - Cập nhật
-  updateProduct = asyncHandler(async (req: Request, res: Response) => {
-    const product = await this.productService.updateProduct(req.params.id, req.body);
-    res.json(new ProductResponseDto(product));
+  res.status(200).json({
+    status: "success",
+    results: result.data.length,
+    total: result.total,
+    page: result.page,
+    totalPages: result.totalPages,
+    data: result.data,
   });
+});
 
-  // DELETE /products/:id - Xoá (Soft delete)
-  deleteProduct = asyncHandler(async (req: Request, res: Response) => {
-    await this.productService.deleteProduct(req.params.id);
-    res.status(204).send(); // Thành công nhưng không trả về nội dung
+// GET | /api/v1/products/:id | Chi tiết sản phẩm theo ID
+export const getProduct = asyncHandler(async (req: Request, res: Response) => {
+  const data = await productService.findById(req.params.id);
+
+  res.status(200).json({
+    status: "success",
+    data,
   });
-}
+});
+
+// GET | /api/v1/products/slug/:slug | Chi tiết sản phẩm theo Slug
+export const getProductBySlug = asyncHandler(
+  async (req: Request, res: Response) => {
+    const data = await productService.findBySlug(req.params.slug);
+
+    res.status(200).json({
+      status: "success",
+      data,
+    });
+  }
+);
+
+// PATCH | /api/v1/products/:id | Cập nhật thông tin sản phẩm
+export const updateProduct = asyncHandler(
+  async (req: Request, res: Response) => {
+    const data = await productService.update(req.params.id, req.body);
+
+    res.status(200).json({
+      status: "success",
+      data,
+    });
+  }
+);
+
+// DELETE | /api/v1/products/:id | Xóa sản phẩm (Xóa mềm)
+export const deleteProduct = asyncHandler(
+  async (req: Request, res: Response) => {
+    await productService.delete(req.params.id);
+
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
+  }
+);

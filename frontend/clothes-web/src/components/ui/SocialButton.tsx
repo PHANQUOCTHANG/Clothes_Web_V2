@@ -1,8 +1,6 @@
-// File: src/components/ui/SocialButton.tsx
-
 import React from "react";
 import { motion } from "framer-motion";
-import { itemVariants } from "../../features/auth/constants/constantsAuth";
+import { itemVariants } from "@/features/client/auth/constants/constantsAuth";
 
 interface SocialButtonProps {
   icon: React.ElementType;

@@ -10,7 +10,7 @@ import reviewRoute from "./review.route";
 const clientRoute = (app: Application) => {
   const path = "/api";
   app.use(path + "/user", userRoute);
-  app.use(path + "/product", productRoute);
+  app.use(path + "/products", productRoute);
   app.use(path + "/category", categoryRoute);
   app.use(path + "/review", reviewRoute);
   app.use(path, authRoute);

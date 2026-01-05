@@ -2,9 +2,7 @@
 
 import React from "react";
 import { ArrowRightIcon } from "@/components/common/Icons";
-import { HeroSliderProps, MenuItemSlider } from "@/features/home/types";
-// Giả định SubMenu đã được chuyển sang TSX
-// import SubMenu from "./SubMenu";
+import { HeroSliderProps, MenuItemSlider } from "@/features/client/home/types";
 
 const MENU_ITEMS: MenuItemSlider[] = [
   { name: "Bán chạy nhất", hasSubMenu: false },

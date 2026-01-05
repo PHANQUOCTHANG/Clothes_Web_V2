@@ -1,44 +1,61 @@
-import { Request, Response } from "express";
-import asyncHandler from "@/utils/asyncHandler";
-import { UserResponseDto } from "@/dto/response/user.response";
+import { userService } from "@/config/container";
 import { normalizeQuery } from "@/interface/query.interface";
-import { UserService } from "@/services/user.service";
+import asyncHandler from "@/utils/asyncHandler";
+import { Request, Response } from "express";
 
-export class UserController {
-  constructor(private readonly userService: UserService) {}
-
-  // POST /users
-  createUser = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.createUser(req.body);
-    res.status(201).json(new UserResponseDto(user));
+// POST | /api/v1/users | Tạo người dùng mới
+export const createUser = asyncHandler(async (req: Request, res: Response) => {
+  const data = await userService.create(req.body);
+  
+  res.status(201).json({ 
+    status: "success", 
+    data 
   });
+});
 
-  // GET /users
-  getUsers = asyncHandler(async (req: Request, res: Response) => {
-    const query = normalizeQuery(req.query);
-    const result = await this.userService.getUsers(query);
-
-    res.json({
-      ...result,
-      data: result.data.map(u => new UserResponseDto(u)),
-    });
+// GET | /api/v1/users | Lấy danh sách người dùng kèm phân trang & search
+export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+  // Chuẩn hóa query từ URL (page, limit, search, sort)
+  const query = normalizeQuery(req.query);
+  const result = await userService.findAll(query);
+  
+  res.status(200).json({ 
+    status: "success", 
+    results: result.data.length, // Số lượng bản ghi trang hiện tại
+    total: result.total,         // Tổng số bản ghi trong hệ thống
+    page: result.page,
+    totalPages: result.totalPages,
+    data: result.data 
   });
+});
 
-  // GET /users/:id
-  getUserById = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.getUserById(req.params.id);
-    res.json(new UserResponseDto(user));
+// GET | /api/v1/users/:id | Lấy chi tiết một người dùng
+export const getUser = asyncHandler(async (req: Request, res: Response) => {
+  const data = await userService.findById(req.params.id);
+  
+  res.status(200).json({ 
+    status: "success", 
+    data 
   });
+});
 
-  // PATCH /users/:id
-  updateUser = asyncHandler(async (req: Request, res: Response) => {
-    const user = await this.userService.updateUser(req.params.id, req.body);
-    res.json(new UserResponseDto(user));
+// PATCH | /api/v1/users/:id | Cập nhật thông tin người dùng
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  const data = await userService.update(req.params.id, req.body);
+  
+  res.status(200).json({ 
+    status: "success", 
+    data 
   });
+});
 
-  // DELETE /users/:id
-  deleteUser = asyncHandler(async (_req: Request, res: Response) => {
-    await this.userService.deleteUser(_req.params.id);
-    res.status(204).send();
+// DELETE | /api/v1/users/:id | Xóa người dùng (xóa mềm)
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  await userService.delete(req.params.id);
+  
+  // Trả về 204 No Content cho hành động xóa thành công
+  res.status(204).json({ 
+    status: "success", 
+    data: null 
   });
-}
+});

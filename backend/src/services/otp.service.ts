@@ -1,66 +1,65 @@
 import bcrypt from "bcrypt";
 import AppError from "@/utils/appError";
-import { OtpRepository } from "@/repositories/otp.repository";
-import { UserRepository } from "@/repositories/user.repository";
-import emailService from "@/services/email.service";
+import { IOtpRepository } from "@/repositories/otp.repository";
+import { IUserRepository } from "@/repositories/user.repository";
+import { emailService } from "@/config/container";
 
-export class OtpService {
-  // Dependency Injection: Tiêm các Repository cần thiết
+export interface IOtpService {
+  send(email: string): Promise<void>;
+  verify(email: string, otp: string): Promise<void>;
+}
+
+export class OtpService implements IOtpService {
   constructor(
-    private readonly otpRepo: OtpRepository,
-    private readonly userRepo: UserRepository
+    private readonly otpRepo: IOtpRepository,
+    private readonly userRepo: IUserRepository
   ) {}
 
-  // Chức năng: Xử lý quy trình gửi OTP
-  async sendOtp(email: string): Promise<boolean> {
-    // 1. Kiểm tra tài khoản tồn tại
+  // Tạo, lưu trữ mã OTP và gửi qua email
+  async send(email: string): Promise<void> {
+    // 1. Kiểm tra email người dùng
     const user = await this.userRepo.findByEmail(email);
     if (!user) throw new AppError("Email không tồn tại trên hệ thống.", 404);
 
-    // 2. Tạo mã 6 số ngẫu nhiên
+    // 2. Tạo mã 6 số ngẫu nhiên và mã hóa
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    // 3. Bảo mật: Hash OTP trước khi lưu xuống Database
     const otpHash = await bcrypt.hash(otp, 10);
 
-    // 4. Dọn dẹp: Xóa các yêu cầu OTP cũ của email này (nếu có)
+    // 3. Dọn dẹp các mã cũ của email này để tránh xung đột
     await this.otpRepo.deleteByEmail(email);
 
-    // 5. Lưu trữ: Tạo bản ghi OTP mới với thời hạn 5 phút
+    // 4. Lưu mã mới vào database với thời hạn 5 phút
     await this.otpRepo.create({
       email,
       otpHash,
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-      verified: false
+      verified: false,
     });
 
-    // 6. Thực thi: Gửi mail (Nếu lỗi mail thì rollback xóa OTP trong DB)
+    // 5. Gửi email (Nếu lỗi thì xóa bản ghi OTP vừa tạo để rollback)
     try {
-      await emailService.sendOtpEmail(email, otp);
+      await emailService.sendOtp(email, otp);
     } catch (error) {
       await this.otpRepo.deleteByEmail(email);
       throw error;
     }
-
-    return true;
   }
 
-  // Chức năng: Xác thực mã OTP người dùng gửi lên
-  async verifyOtp(email: string, otp: string): Promise<boolean> {
-    // 1. Tìm bản ghi OTP hợp lệ (Chưa hết hạn)
+  // So khớp mã OTP người dùng nhập vào
+  async verify(email: string, otp: string): Promise<void> {
+    // 1. Tìm bản ghi OTP hợp lệ (chưa hết hạn)
     const record = await this.otpRepo.findValidByEmail(email);
-    if (!record) throw new AppError("Mã OTP đã hết hạn hoặc không tồn tại.", 400);
+    if (!record)
+      throw new AppError("Mã OTP đã hết hạn hoặc không tồn tại.", 400);
 
-    // 2. Kiểm tra xem mã đã được sử dụng trước đó chưa
+    // 2. Kiểm tra xem mã đã được dùng chưa
     if (record.verified) throw new AppError("Mã OTP này đã được sử dụng.", 400);
 
-    // 3. So sánh mã người dùng nhập với bản hash trong DB
+    // 3. So sánh mã hash
     const isValid = await bcrypt.compare(otp, record.otpHash);
     if (!isValid) throw new AppError("Mã OTP không chính xác.", 400);
 
-    // 4. Đánh dấu đã xác thực thành công
+    // 4. Đánh dấu mã đã sử dụng thành công
     await this.otpRepo.markVerified(record.id);
-
-    return true;
   }
 }

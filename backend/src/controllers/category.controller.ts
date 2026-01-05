@@ -1,45 +1,68 @@
-import { Request, Response } from "express";
-import asyncHandler from "@/utils/asyncHandler";
-import { CategoryService } from "@/services/category.service";
-import { CategoryResponseDto } from "@/dto/response/category.response";
+import { categoryService } from "@/config/container";
 import { normalizeQuery } from "@/interface/query.interface";
+import asyncHandler from "@/utils/asyncHandler";
+import { Request, Response } from "express";
 
-export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+// POST | /api/v1/categories | Tạo danh mục mới
+export const createCategory = asyncHandler(
+  async (req: Request, res: Response) => {
+    const data = await categoryService.create(req.body);
 
-  // POST /categories - Tạo danh mục mới
-  createCategory = asyncHandler(async (req: Request, res: Response) => {
-    const category = await this.categoryService.createCategory(req.body);
-    // Trả về dữ liệu đã được lọc qua DTO
-    res.status(201).json(new CategoryResponseDto(category));
-  });
-
-  // GET /categories - Lấy danh sách danh mục (phân trang + search)
-  getCategories = asyncHandler(async (req: Request, res: Response) => {
-    const query = normalizeQuery(req.query); // Chuẩn hóa page, limit từ URL
-    const result = await this.categoryService.getCategories(query);
-
-    res.json({
-      ...result,
-      data: result.data.map(cat => new CategoryResponseDto(cat)),
+    res.status(201).json({
+      status: "success",
+      data,
     });
-  });
+  }
+);
 
-  // GET /categories/:id - Lấy chi tiết một danh mục
-  getCategoryById = asyncHandler(async (req: Request, res: Response) => {
-    const category = await this.categoryService.getCategoryById(req.params.id);
-    res.json(new CategoryResponseDto(category));
-  });
+// GET | /api/v1/categories | Lấy danh sách danh mục (Phân trang & Search)
+export const getCategories = asyncHandler(
+  async (req: Request, res: Response) => {
+    const query = normalizeQuery(req.query);
+    const result = await categoryService.findAll(query);
 
-  // PATCH /categories/:id - Cập nhật thông tin danh mục
-  updateCategory = asyncHandler(async (req: Request, res: Response) => {
-    const category = await this.categoryService.updateCategory(req.params.id, req.body);
-    res.json(new CategoryResponseDto(category));
-  });
+    res.status(200).json({
+      status: "success",
+      results: result.data.length,
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages,
+      data: result.data,
+    });
+  }
+);
 
-  // DELETE /categories/:id - Xóa mềm danh mục
-  deleteCategory = asyncHandler(async (req: Request, res: Response) => {
-    await this.categoryService.deleteCategory(req.params.id);
-    res.status(204).send(); // Thành công nhưng không trả nội dung
+// GET | /api/v1/categories/:id | Chi tiết một danh mục
+export const getCategory = asyncHandler(async (req: Request, res: Response) => {
+  const data = await categoryService.findById(req.params.id);
+
+  res.status(200).json({
+    status: "success",
+    data,
   });
-}
+});
+
+// PATCH | /api/v1/categories/:id | Cập nhật thông tin danh mục
+export const updateCategory = asyncHandler(
+  async (req: Request, res: Response) => {
+    const data = await categoryService.update(req.params.id, req.body);
+
+    res.status(200).json({
+      status: "success",
+      data,
+    });
+  }
+);
+
+// DELETE | /api/v1/categories/:id | Xóa danh mục (Xóa mềm)
+export const deleteCategory = asyncHandler(
+  async (req: Request, res: Response) => {
+    await categoryService.delete(req.params.id);
+
+    // Trả về 204 No Content cho hành động xóa thành công
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
+  }
+);

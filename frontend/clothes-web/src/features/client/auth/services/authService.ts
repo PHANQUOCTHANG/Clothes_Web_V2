@@ -1,86 +1,103 @@
-// File: src/services/authService.ts
+// src/features/auth/services/auth.service.ts
 
-import axios from "axios";
-import { LoginFormState } from "@/features/auth/constants/constantsAuth";
-
-// --- Cấu hình Căn bản ---
-const BASE_URL = "https://api.yourshop.com/v1/auth";
-const apiClient = axios.create({
-  baseURL: BASE_URL,
-  headers: { "Content-Type": "application/json" },
-});
-
-// Giả lập Interceptor để thêm độ trễ mạng (1s) cho Mock API
-apiClient.interceptors.request.use((config) => {
-  return new Promise((resolve) => setTimeout(() => resolve(config), 1000));
-});
-
-// --- Type cho Phản hồi ---
-interface AuthResponseData {
-  token?: string;
-  message?: string;
-  user?: { id: number; email: string; name: string };
-}
-
-// ====================================================================
-// --- Các Hàm Dịch vụ Xác thực Cụ thể ---
-// ====================================================================
+import { AuthResponse } from "@/features/client/auth/types";
+import { api } from "@/lib/axios";
+import { handleAxiosError } from "@/utils/handleAxiosError";
 
 export const authService = {
-  /** Dịch vụ Đăng nhập */
-  login: async (email: string, password: string): Promise<AuthResponseData> => {
-    if (email === "test@shop.com" && password === "123456") {
-      return {
-        token: "mock-jwt-token-12345",
-        message: "Đăng nhập thành công!",
-        user: { id: 1, email, name: "Test User" },
-      };
-    } else {
-      throw new Error("Thông tin đăng nhập không hợp lệ.");
+  // --- Đăng nhập ---
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    try {
+      // Call API đăng nhập, BE trả về { accessToken, user } và set cookie refreshToken
+      const res = await api.post<{ data: AuthResponse }>("/api/auth/login", {
+        email,
+        password,
+      });
+      return res.data.data;
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
     }
   },
 
-  /** Dịch vụ Đăng ký */
-  register: async (form: LoginFormState): Promise<AuthResponseData> => {
-    if (form.email === "error@shop.com") {
-      throw new Error("Email này đã được sử dụng.");
+  // --- Đăng ký ---
+  register: async (
+    fullName: string,
+    email: string,
+    password: string
+  ): Promise<AuthResponse> => {
+    try {
+      // Call API đăng ký, BE trả về { accessToken, user } và set cookie refreshToken
+      const res = await api.post<{ data: AuthResponse }>("/api/auth/register", {
+        fullName,
+        email,
+        password,
+      });
+      return res.data.data;
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
     }
-
-    return { message: "Đăng ký thành công! Vui lòng đăng nhập." };
   },
 
-  /** B1: Gửi email để nhận OTP */
-  sendPasswordResetEmail: async (email: string): Promise<AuthResponseData> => {
-    if (email === "notfound@shop.com") {
-      throw new Error("Email không tồn tại trong hệ thống.");
+  // --- Làm mới accessToken ---
+  refresh: async (): Promise<{ accessToken: string }> => {
+    try {
+      // BE đọc refreshToken từ cookie HttpOnly và trả accessToken mới
+      const res = await api.post<{ data: { accessToken: string } }>(
+        "/api/auth/refresh",
+        {},
+        { withCredentials: true }
+      );
+      return res.data.data;
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
     }
-
-    return {
-      message:
-        "Mã OTP đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư!",
-    };
   },
 
-  /** B2: Xác thực OTP */
-  verifyOtp: async (email: string, otp: string): Promise<AuthResponseData> => {
-    if (otp !== "123456") {
-      // Mock OTP
-      throw new Error("Mã OTP không hợp lệ.");
+  // --- Đăng xuất ---
+  logout: async (): Promise<void> => {
+    try {
+      // BE xóa refreshToken trong cookie
+      await api.post("/api/auth/logout", {}, { withCredentials: true });
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
     }
-
-    return { message: "Xác thực OTP thành công. Vui lòng đặt mật khẩu mới." };
   },
 
-  /** B3: Đặt lại Mật khẩu */
+  // --- Gửi OTP quên mật khẩu ---
+  sendOtp: async (email: string): Promise<void> => {
+    try {
+      await api.post("/api/auth/send-otp", { email });
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
+    }
+  },
+
+  // --- Xác thực OTP ---
+  verifyOtp: async (email: string, otp: string): Promise<void> => {
+    try {
+      await api.post("/api/auth/verify-otp", { email, otp });
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
+    }
+  },
+
+  // --- Đặt lại mật khẩu ---
   resetPassword: async (
     email: string,
     otp: string,
     newPassword: string
-  ): Promise<AuthResponseData> => {
-    if (newPassword.length < 6) {
-      throw new Error("Mật khẩu phải có ít nhất 6 ký tự.");
+  ): Promise<void> => {
+    try {
+      await api.post("/api/auth/reset-password", { email, otp, newPassword });
+    } catch (error) {
+      handleAxiosError(error);
+      throw error;
     }
-
-    return { message: "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập." };
   },
 };

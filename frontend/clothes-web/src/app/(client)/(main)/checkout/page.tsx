@@ -8,9 +8,12 @@ import {
   MapPin,
   CreditCard,
 } from "lucide-react";
-import { CheckoutProps, ICheckoutFormData } from "@/features/checkout/types";
-import { OrderSummary } from "@/features/checkout/components/OrderSummary";
-import StepIndicator from "@/features/checkout/components/StepIndicator";
+import {
+  CheckoutProps,
+  ICheckoutFormData,
+} from "@/features/client/checkout/types";
+import { OrderSummary } from "@/features/client/checkout/components/OrderSummary";
+import StepIndicator from "@/features/client/checkout/components/StepIndicator";
 import createRipple from "@/utils/createRipple";
 
 const CheckoutPage: React.FC<CheckoutProps> = ({

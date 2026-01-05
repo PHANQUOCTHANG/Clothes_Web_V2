@@ -2,16 +2,13 @@
 
 import React from "react";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"; // Giả định hook này đã có types
-import {
-  BannerItem,
-  CategoryItemData,
-  MainContentProps,
-} from "@/features/home/types";
-import { TrendingCollection } from "@/features/home/components/TrendingCollection";
-import { WeeklyTrending } from "@/features/home/components/WeeklyTrending";
-import { FeaturedProducts } from "@/features/home/components/FeaturedProducts";
-import LargePromoBanner from "@/features/home/components/LargePromoBanner";
-import ServiceInfo from "@/features/home/components/ServiceInfo";
+import { BannerItem, CategoryItemData, MainContentProps } from "@/features/client/home/types";
+import { TrendingCollection } from "@/features/client/home/components/TrendingCollection";
+import { WeeklyTrending } from "@/features/client/home/components/WeeklyTrending";
+import { FeaturedProducts } from "@/features/client/home/components/FeaturedProducts";
+import LargePromoBanner from "@/features/client/home/components/LargePromoBanner";
+import ServiceInfo from "@/features/client/home/components/ServiceInfo";
+
 
 // --- CONSTANTS ---
 const IMAGE_PLACEHOLDER =

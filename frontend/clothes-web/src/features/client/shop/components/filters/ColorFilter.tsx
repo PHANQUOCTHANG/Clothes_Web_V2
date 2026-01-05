@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import type { ColorFilter as ColorFilterType } from "../../types";
 import { COLOR_LIMIT } from "../../constants";
-import { Color } from "../../types";
 
 interface ColorFilterProps {
-  colors: Color[];
+  colors: ColorFilterType[];
   selectedColors: string[];
   onSelectColor: (color: string) => void;
   isOpen: boolean;
@@ -41,21 +41,19 @@ export const ColorFilter = ({
         <>
           <div className="grid grid-cols-5 gap-3">
             {displayedColors.map((color) => {
-              const isSelected = selectedColors.includes(color.hex);
+              const isSelected = selectedColors.includes(color.code);
               return (
                 <div
-                  key={color.hex}
+                  key={color.code}
                   className={`w-7 h-7 rounded-full border-2 transition duration-150 cursor-pointer flex items-center justify-center relative group ${
                     isSelected
                       ? "border-gray-500"
                       : "border-transparent hover:border-gray-300"
                   }`}
-                  onClick={() => onSelectColor(color.hex)}
+                  onClick={() => onSelectColor(color.code)}
                   style={{
-                    backgroundColor: color.hex,
-                    backgroundImage: color.pattern
-                      ? `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><rect width='10' height='10' fill='${color.hex}'/><path d='M0 0l10 10M0 10l10 -10' stroke='rgba(0,0,0,0.2)' stroke-width='0.5'/></svg>")`
-                      : "none",
+                    backgroundColor: color.code,
+                    backgroundImage: "none",
                   }}
                   aria-label={`Chọn màu ${color.name}`}
                 >

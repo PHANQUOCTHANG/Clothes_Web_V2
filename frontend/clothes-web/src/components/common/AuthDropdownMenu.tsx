@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { User } from "lucide-react";
-import { useAuthMenu } from "@/features/home/hooks/useAuthMenu";
 
 interface Props {
   isLoggedIn: boolean;
@@ -11,11 +11,30 @@ interface Props {
 }
 
 const AuthDropdownMenu: React.FC<Props> = (props) => {
-  const { isOpen, setIsOpen, statusMessage, handleAction } = useAuthMenu(
-    props.isLoggedIn,
-    props.onLogout,
-    props.toggleLoginState,
-    props.setCurrentView
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Xử lý các hành động menu
+  const handleAction = useCallback(
+    (action: string) => {
+      setIsOpen(false);
+
+      switch (action) {
+        case "logout":
+          props.onLogout();
+          break;
+        case "login":
+          router.push("/login");
+          break;
+        case "register":
+          router.push("/register");
+          break;
+        case "profile":
+          props.setCurrentView("profile");
+          break;
+      }
+    },
+    [router, props]
   );
 
   // Lưu các tùy chọn menu để tránh tính toán lại khi re-render
@@ -33,15 +52,22 @@ const AuthDropdownMenu: React.FC<Props> = (props) => {
     [props.isLoggedIn]
   );
 
+  // Đóng menu khi click bên ngoài
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        isOpen &&
+        !(e.target as HTMLElement).closest(".auth-dropdown-container")
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isOpen]);
+
   return (
     <div className="relative auth-dropdown-container">
-      {/* Thông báo trạng thái (xác nhận, lỗi, etc) */}
-      {statusMessage && (
-        <div className="absolute top-full right-0 mt-2 bg-black text-white text-xs px-3 py-1 rounded shadow-lg z-50 animate-fade-in">
-          {statusMessage}
-        </div>
-      )}
-
       {/* Nút mở menu dropdown */}
       <button
         onClick={() => setIsOpen(!isOpen)}

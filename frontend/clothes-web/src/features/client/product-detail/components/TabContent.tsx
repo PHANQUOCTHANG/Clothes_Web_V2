@@ -1,10 +1,12 @@
-import { RatingStars } from "@/features/product-detail/components/common/Rating";
-import { WashingIcon } from "@/features/product-detail/components/common/Utilities";
-import { REVIEW_IMAGES } from "@/features/product-detail/constants";
-import { IProductData } from "@/features/product-detail/types";
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @next/next/no-img-element */
+import { RatingStars } from "@/features/client/product-detail/components/common/Rating";
+import { WashingIcon } from "@/features/client/product-detail/components/common/Utilities";
+import { REVIEW_IMAGES } from "@/features/client/product-detail/constants";
+import { IProduct } from "@/types/product";
 import { Maximize } from "lucide-react";
 
-export const renderDetailsContent = (currentProduct: IProductData) => (
+export const renderDetailsContent = (currentProduct : IProduct) => (
   <div className="py-6 text-gray-700">
     <p className="text-sm mb-8 leading-relaxed">
       Chi phí vận chuyển dựa trên trọng lượng, hãy thêm sản phẩm vào giỏ hàng và
@@ -139,11 +141,11 @@ export const renderDetailsContent = (currentProduct: IProductData) => (
   </div>
 );
 
-export const renderReviewsContent = (currentProduct: IProductData) => {
+export const renderReviewsContent = (currentProduct: IProduct) => {
   return (
     <div className="py-6 text-gray-700">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-        Đánh giá khách hàng ({currentProduct.reviewCount})
+        Đánh giá khách hàng ({currentProduct.reviews?.length || 0})
       </h2>
 
       <div className="border-b border-gray-200 pb-6 mb-6">
@@ -153,12 +155,8 @@ export const renderReviewsContent = (currentProduct: IProductData) => {
 
         <div className="space-y-1 text-sm mb-4">
           <div className="flex items-center">
-            <span className="w-16 font-medium text-gray-600">Giá trị:</span>
-            <RatingStars rating={5} size={14} />
-          </div>
-          <div className="flex items-center">
-            <span className="w-16 font-medium text-gray-600">Chất lượng:</span>
-            <RatingStars rating={5} size={14} />
+            <span className="w-16 font-medium text-gray-600">Đánh giá:</span>
+            <RatingStars rating={currentProduct.rating} size={14} />
           </div>
         </div>
 
@@ -201,12 +199,8 @@ export const renderReviewsContent = (currentProduct: IProductData) => {
 
         <div className="space-y-1 text-sm mb-4">
           <div className="flex items-center">
-            <span className="w-16 font-medium text-gray-600">Chất lượng:</span>
-            <RatingStars rating={4} size={14} />
-          </div>
-          <div className="flex items-center">
-            <span className="w-16 font-medium text-gray-600">Giá:</span>
-            <RatingStars rating={5} size={14} />
+            <span className="w-16 font-medium text-gray-600">Đánh giá:</span>
+            <RatingStars rating={currentProduct.rating} size={14} />
           </div>
         </div>
 
@@ -223,7 +217,7 @@ export const renderReviewsContent = (currentProduct: IProductData) => {
 
 export const renderTabContent = (
   activeTab: string,
-  currentProduct: IProductData
+  currentProduct: IProduct
 ) => {
   switch (activeTab) {
     case "details":

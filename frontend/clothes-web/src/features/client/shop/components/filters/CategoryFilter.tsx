@@ -9,12 +9,16 @@ interface CategoryFilterProps {
   categories: Category[];
   isOpen: boolean;
   onToggle: () => void;
+  selectedCategories: string[];
+  onSelectCategory: (categoryName: string) => void;
 }
 
 export const CategoryFilter = ({
   categories,
   isOpen,
   onToggle,
+  selectedCategories,
+  onSelectCategory,
 }: CategoryFilterProps) => {
   const [showAll, setShowAll] = useState(false);
   const displayedCategories = showAll
@@ -37,21 +41,20 @@ export const CategoryFilter = ({
       </h3>
       {isOpen && (
         <div className="space-y-2 text-sm">
-          {displayedCategories.map((cat) => (
-            <div
-              key={cat.name}
-              className="flex justify-between items-center cursor-pointer text-gray-600 hover:text-black transition"
-            >
-              <span
-                className={
-                  cat.name === "Giày Thể Thao" ? "font-medium text-black" : ""
-                }
+          {displayedCategories.map((cat) => {
+            const isSelected = selectedCategories.includes(cat.name);
+            return (
+              <div
+                key={cat.name}
+                className="flex justify-between items-center cursor-pointer text-gray-600 hover:text-black transition"
+                onClick={() => onSelectCategory(cat.name)}
               >
-                {cat.name}
-              </span>
-              <span className="text-xs text-gray-500">({cat.count})</span>
-            </div>
-          ))}
+                <span className={isSelected ? "font-medium text-black" : ""}>
+                  {cat.name}
+                </span>
+              </div>
+            );
+          })}
           {hasMore && (
             <button
               onClick={() => setShowAll(!showAll)}

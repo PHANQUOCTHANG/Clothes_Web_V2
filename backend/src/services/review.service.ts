@@ -1,55 +1,92 @@
 import AppError from "@/utils/appError";
-import { ReviewRepository } from "@/repositories/review.repository";
-import { ProductRepository } from "@/repositories/product.repository";
+import { IReviewRepository } from "@/repositories/review.repository";
+import { IProductRepository } from "@/repositories/product.repository";
 import { CreateReviewRequestDto } from "@/dto/request/review.request";
 import { IReviewDocument } from "@/interface/review.interface";
-import { BaseQuery, IPaginatedResult } from "@/interface/query.interface";
+import {
+  BaseQuery,
+  IPaginatedResult,
+  normalizeQuery,
+} from "@/interface/query.interface";
 
-export class ReviewService {
+export interface IReviewService {
+  create(userId: string, dto: CreateReviewRequestDto): Promise<any>;
+  findAll(query: any, productId?: string): Promise<any>;
+  delete(id: string): Promise<void>;
+}
+
+export class ReviewService implements IReviewService {
   constructor(
-    private readonly reviewRepo: ReviewRepository,
-    private readonly productRepo: ProductRepository
+    private readonly reviewRepo: IReviewRepository,
+    private readonly productRepo: IProductRepository
   ) {}
 
-  // Tạo đánh giá mới và cập nhật Rating trung bình cho Product
-  async createReview(userId: string, dto: CreateReviewRequestDto): Promise<IReviewDocument> {
-    // Kiểm tra xem user đã đánh giá sản phẩm này chưa (Tránh spam)
-    const existed = await this.reviewRepo.findOne({ user: userId, product: dto.product });
+  // Tạo đánh giá và cập nhật lại điểm trung bình của sản phẩm
+  async create(userId: string, dto: CreateReviewRequestDto): Promise<any> {
+    // Kiểm tra xem người dùng đã đánh giá sản phẩm này chưa
+    const existed = await this.reviewRepo.findOne({
+      user: userId,
+      product: dto.product,
+    });
     if (existed) throw new AppError("Bạn đã đánh giá sản phẩm này rồi", 400);
 
-    // Lưu review vào DB
+    // Lưu đánh giá mới
     const review = await this.reviewRepo.create({ ...dto, user: userId });
 
-    // Tính toán lại Rating trung bình từ Aggregation
+    // Tính toán lại rating trung bình và số lượng đánh giá
     const stats = await this.reviewRepo.calculateAverageRating(dto.product);
-    
-    // Cập nhật điểm rating và số lượng đánh giá vào bảng Product
-    await this.productRepo.updateById(dto.product, { 
-      rating: Math.round(stats.avgRating * 10) / 10, // Làm tròn 1 chữ số thập phân (vd: 4.5)
-      amountBuy: stats.totalReviews // Giả sử dùng amountBuy hoặc field tương đương để lưu số lượt review
+
+    // Cập nhật thông tin vào bảng Product
+    await this.productRepo.updateById(dto.product, {
+      rating: stats.avgRating,
+      amountBuy: stats.totalReviews, // Số lượng đánh giá thực tế
     });
 
-    return review;
+    return this.mapToResponse(review);
   }
 
-  // Lấy danh sách đánh giá có phân trang (Dành cho trang chi tiết sản phẩm)
-  async getReviews(query: BaseQuery, productId?: string): Promise<IPaginatedResult<IReviewDocument>> {
+  // Lấy danh sách đánh giá kèm filter sản phẩm (nếu có)
+  async findAll(query: any, productId?: string): Promise<any> {
+    const normalizedQuery = normalizeQuery(query);
     const filter = productId ? { product: productId } : {};
-    return this.reviewRepo.findAll(query, filter);
+
+    const result = await this.reviewRepo.findAll(normalizedQuery, filter);
+
+    return {
+      ...result,
+      data: result.data.map((rev: any) => this.mapToResponse(rev)),
+    };
   }
 
-  // Xoá đánh giá và tính toán lại Rating
-  async deleteReview(id: string): Promise<void> {
+  // Xóa đánh giá và cập nhật lại rating cho sản phẩm
+  async delete(id: string): Promise<void> {
     const review = await this.reviewRepo.findById(id);
     if (!review) throw new AppError("Đánh giá không tồn tại", 404);
 
     const productId = review.product.toString();
+
+    // Gọi xóa mềm từ Repository
     await this.reviewRepo.deleteById(id);
 
-    // Tính toán lại sau khi xoá
+    // Tính toán lại rating trung bình sau khi một đánh giá bị ẩn
     const stats = await this.reviewRepo.calculateAverageRating(productId);
-    await this.productRepo.updateById(productId, { 
-      rating: Math.round(stats.avgRating * 10) / 10 
+
+    await this.productRepo.updateById(productId, {
+      rating: stats.avgRating,
+      amountBuy: stats.totalReviews,
     });
+  }
+
+  // Chuyển đổi dữ liệu sang Response DTO sạch
+  private mapToResponse(review: IReviewDocument): any {
+    return {
+      id: review._id || review.id,
+      user: review.user,
+      product: review.product.toString(),
+      rating: review.rating,
+      comment: review.comment || "",
+      images: review.images || [],
+      createdAt: review.createdAt,
+    };
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { MIN_PRICE, MAX_PRICE } from "../../constants";
+import { MIN_PRICE, MAX_PRICE, COLORS } from "../../constants";
 import { FilterState } from "../../types";
 
 interface ActiveFiltersProps {
@@ -14,68 +14,93 @@ export const ActiveFilters = ({
   onRemove,
   onClearAll,
 }: ActiveFiltersProps) => {
-  const activeArrayFilters = ["size", "brand", "color"].flatMap(
-    (type: string) =>
-      filters[type as "size" | "brand" | "color"].map((value) => ({
-        type,
-        value,
-        label: `${
-          type === "size"
-            ? "Kích cỡ"
-            : type === "brand"
-            ? "Thương hiệu"
-            : "Màu sắc"
-        }: ${value}`,
-      }))
-  );
+  // Helper function to get color name from code
+  const getColorName = (code: string): string => {
+    const color = COLORS.find((c) => c.code === code);
+    return color ? color.name : code;
+  };
+  // Group filters by type
+  const groupedFilters: Record<string, { label: string; values: string[] }> =
+    {};
 
+  // Add size filters
+  if (filters.size.length > 0) {
+    groupedFilters["size"] = {
+      label: "Kích cỡ",
+      values: filters.size,
+    };
+  }
+
+  // Add color filters
+  if (filters.color.length > 0) {
+    const colorNames = filters.color.map((code) => getColorName(code));
+    groupedFilters["color"] = {
+      label: "Màu sắc",
+      values: colorNames,
+    };
+  }
+
+  // Add category filters
+  if (filters.category.length > 0) {
+    groupedFilters["category"] = {
+      label: "Danh mục",
+      values: filters.category,
+    };
+  }
+
+  // Add price filter
   const isPriceFiltered =
     filters.price.min !== MIN_PRICE || filters.price.max !== MAX_PRICE;
-  const activePrice = isPriceFiltered
-    ? [
-        {
-          type: "price",
-          value: "reset",
-          label: `Giá: $${filters.price.min.toFixed(
-            2
-          )} - $${filters.price.max.toFixed(2)}`,
-        },
-      ]
-    : [];
+  if (isPriceFiltered) {
+    groupedFilters["price"] = {
+      label: "Giá",
+      values: [
+        `$${filters.price.min.toFixed(2)} - $${filters.price.max.toFixed(2)}`,
+      ],
+    };
+  }
 
-  const allActiveFilters = [...activeArrayFilters, ...activePrice];
+  const allActiveFilters = Object.entries(groupedFilters);
 
   if (allActiveFilters.length === 0) return null;
 
   return (
     <div className="mb-6 pt-0 border-b border-gray-200 pb-4">
       <h2 className="text-2xl font-light tracking-wide mb-4">Đang lọc theo</h2>
-      <div className="space-y-1 text-base">
-        {allActiveFilters.map((filter, index) => (
-          <div key={index} className="flex items-center text-gray-800">
+      <div className="flex flex-wrap gap-3 mb-4">
+        {allActiveFilters.map(([type, { label, values }]) => (
+          <div
+            key={type}
+            className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-800"
+          >
+            <span className="font-light">
+              {label}: {values.join(", ")}
+            </span>
             <button
-              onClick={() =>
-                onRemove(
-                  filter.type,
-                  filter.value === "reset" ? "reset" : filter.value
-                )
-              }
-              className="text-gray-500 hover:text-black mr-2 text-xl leading-none font-light"
-              style={{ width: "1rem", height: "1rem" }}
-              aria-label={`Xóa bộ lọc ${filter.label}`}
+              onClick={() => {
+                if (type === "price") {
+                  onRemove(type, "reset");
+                } else {
+                  // Remove all values of this type
+                  values.forEach((value) => onRemove(type, value));
+                }
+              }}
+              className="text-gray-500 hover:text-black text-lg leading-none font-light"
+              aria-label={`Xóa bộ lọc ${label}`}
             >
               &times;
             </button>
-            <span className="font-light">{filter.label}</span>
           </div>
         ))}
+      </div>
+      {allActiveFilters.length > 0 && (
         <button
           onClick={onClearAll}
-          className="pt-4 text-sm text-black hover:text-gray-700 transition block font-medium"
+          className="text-sm text-black hover:text-gray-700 transition font-medium"
         >
           Xóa tất cả
         </button>
-      </div>
+      )}
     </div>
   );
 };

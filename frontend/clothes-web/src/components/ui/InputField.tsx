@@ -1,5 +1,3 @@
-// File: src/components/ui/InputField.tsx
-
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -7,7 +5,7 @@ import {
   Eye,
   EyeOff,
   ThemeConstants,
-} from "../../features/auth/constants/constantsAuth";
+} from "@/features/client/auth/constants/constantsAuth";
 
 interface InputFieldProps {
   icon: React.ElementType;
